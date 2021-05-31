@@ -2,11 +2,46 @@
 #include <stdio.h>  // FILE, fopen, fclose, etc.
 #include <string.h> // strtok, strcpy, etc.
 #include <stdlib.h> // malloc, calloc, free, etc.
-
 #include "os_API.h"
 
+char* disk_route = "";
+int partition = 0;
+
+
+void os_mount(char* diskname, int to_partition){
+    disk_route = diskname;
+    partition = to_partition;
+}
 void os_mbt() {
-    int alpha;
+    // Array buffer donde se van a guardar bytes
+    unsigned char buffer[1024];
+    // Puntero a archivo 
+    FILE *ptr;
+    // lecutra del disko 
+    ptr = fopen(disk_route,"rb");
+    // Leemos el disco y asignamos al buffer los bytes. En este caso solo cambiar en buffer el largo para ver cuanto leer. Ahora llemos 1024 bytes
+    fread(buffer,sizeof(buffer),1,ptr);
+
+    for(int i = 0; i<1024; i+=8){
+        //printf("%u ", buffer[i]);
+        // Definimos un array de ints que van a contener los bits
+        int binary[8];
+        // En este for poblamos el array de bits segun el byte buffer[i] (Acordar que buffer es array de bytes)
+        for(int n = 0; n < 8; n++)
+            
+            binary[7-n] = (buffer[i] >> n) & 1;
+
+        // for(int n = 0; n < 8; n++){
+        //     printf("%d", binary[n]);
+        // }
+        // Revisamos el primer bit
+        if (binary[0] == 1){
+            printf("Particion %d valida\n", buffer[i]-128);
+        }
+        //printf("\n");
+    
+    }
+    fclose(ptr);
 }
 
 // unsigned int_to_int(unsigned k) {
