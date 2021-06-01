@@ -154,7 +154,7 @@ void os_bitmap(unsigned num){
         
     }
     printf("\n");
-    printf("Bloques libres %d\n", used);
+    printf("Bloques usados %d\n", used);
     printf("Bloques disponibles %d\n", number_of_blocks - used);
 
     
@@ -186,7 +186,7 @@ int os_exists(char* filename){
             actual_filename[i-4] = buffer[i];
             
         }
-        printf("NOmbre del file %s\n",actual_filename);
+        //printf("NOmbre del file %s\n",actual_filename);
         if (!strcmp(actual_filename, filename)){
             return 1;
         }
@@ -195,14 +195,79 @@ int os_exists(char* filename){
         /* code */
     }
     return 0;
+
+}
+
+void os_ls(){
+    // partitionData* pd = get_partition_data();
+    // int block_id = pd -> dir_block_id;
+    int block_id = dir_block_id;
+
     
+    FILE *ptr;
+    ptr = fopen(disk_route, "rb");
+    fseek(ptr, block_id*2048 + 1024, SEEK_SET);
     
+    for (int i = 0; i < 64; i++){
+        unsigned char buffer[32];
+        fread(buffer, sizeof(buffer), 1, ptr);
+        if (!buffer[0]){
+            continue;
+        }
+        char actual_filename[28];
+        for (size_t i = 4; i < 32; i++)
+        {
+            actual_filename[i-4] = buffer[i];
+            
+        }
+        printf("Nombre del file %s\n",actual_filename);
+       
+        /* code */
+    }
 
 
 }
 
 
+void os_delete_partition(int id){
 
+    unsigned char buffer[1024];
+    FILE *ptr;
+    ptr = fopen(disk_route,"r+b");
+    fread(buffer,sizeof(buffer),1,ptr);
+    for(int i = 0; i<1024; i+=8){
+        int binary[8];
+        for(int n = 0; n < 8; n++)
+            binary[7-n] = (buffer[i] >> n) & 1;
+
+        if (binary[0] == 1){                                      
+            if(buffer[i]-128 == id){
+                printf("ENCONTRE PARTICION %d en el i %d\n", buffer[i] - 128, i);
+                fseek(ptr, i, SEEK_SET);
+                unsigned char newByte = 0x00;
+                fwrite(&newByte, sizeof(newByte), 1, ptr);
+            }
+        }    
+    }
+    
+    fclose(ptr);
+
+}
+
+void os_reset_mbt(){
+    unsigned char buffer[1024];
+    FILE *ptr;
+    ptr = fopen(disk_route,"r+b");
+    fread(buffer,sizeof(buffer),1,ptr);
+    for(int i = 0; i<1024; i+=8){
+
+        fseek(ptr, i, SEEK_SET);
+        unsigned char newByte = 0x00;
+        fwrite(&newByte, sizeof(newByte), 1, ptr);  
+    }
+    
+    fclose(ptr);
+}
 
 void read_file(char* diskname)
 {

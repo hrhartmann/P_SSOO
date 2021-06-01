@@ -13,6 +13,10 @@ int main(int argc, char **argv)
   os_mbt();
   os_bitmap(1);
   printf("%d\n",os_exists("reary.png"));
+  os_ls();
+  //os_delete_partition(4);
+  //os_reset_mbt();
+  //os_mbt();
 
 }
 
