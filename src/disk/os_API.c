@@ -2,6 +2,7 @@
 #include <stdio.h>  // FILE, fopen, fclose, etc.
 #include <string.h> // strtok, strcpy, etc.
 #include <stdlib.h> // malloc, calloc, free, etc.
+#include <math.h>
 #include "os_API.h"
 
 char* disk_route = "";
@@ -102,44 +103,62 @@ void os_mbt() {
 
 
 void os_bitmap(unsigned num){
-    unsigned char buffer[1024];
+    
     FILE *ptr;
     ptr = fopen(disk_route,"rb");
+    int bit_blocks = ceil((double) number_of_blocks/16384);
+    int last_bits = number_of_blocks % 16384;
     
-    for(int i = 0; i<1024; i+=8){
-        int binary[8];
-        for(int n = 0; n < 8; n++)
-            binary[7-n] = (buffer[i] >> n) & 1;
-
-        if (binary[0] == 1){                                      
-            if(buffer[i]-128 == partition){
-                int block_number = buffer[i+1] << 16 | buffer[i+2] << 8 | buffer[i+3];
-                int ctd = buffer[i+4] << 24 | buffer[i+5] << 16 | buffer[i+6] << 8 | buffer[i+7];
-                printf("num0 %u\n", buffer[i]);
-                printf("num1 %u\n", buffer[i+1]);
-                printf("num2 %u\n", buffer[i+2]);
-                printf("num3 %u\n", buffer[i+3]);
-                printf("Numero de bloque %u\n", block_number);
-                printf("num4 %u\n", buffer[i+4]);
-                printf("num5 %u\n", buffer[i+5]);
-                printf("num6 %u\n", buffer[i+6]);
-                printf("num7 %u\n", buffer[i+7]);
-                printf("Cantidad de bloque %u\n", ctd);
-            }
-
-
-
-        }    
-    }
-    
-
     if (num == 0){
-        printf("Imprimir bitmaps entero\n");
+        printf("Imprimir todo\n");
+        fseek(ptr, dir_block_id*2048 + 1024 + 2048, SEEK_SET);
+        for (int i = 0; i < bit_blocks; i++)
+        {
+            printf("Bloque bitmap %d\n", i+1);
+            unsigned char buffer[2048];
+            fread(buffer, sizeof(buffer), 1, ptr);
+            for (int j = 0; j < 2048; j++)
+            {
+                fprintf(stderr, "%02X", buffer[j]);
+            }
+            printf("\n");
+        }
+        
     }else{
-        //fseek(ptr, block_number*2048 + 1024, SEEK_SET);
-        // // Me encuentro en el bloque directorio
+        fseek(ptr, dir_block_id*2048 + 1024 + num*2048, SEEK_SET);
+        unsigned char buffer[2048];
+        fread(buffer, sizeof(buffer), 1, ptr);
+        for (int i = 0; i < 2048; i++)
+        {
+            fprintf(stderr, "%02X", buffer[i]);
+        }
+        printf("\n");      
         
     }
+    //char bitmap[131072];
+    int used = 0;
+    fseek(ptr, dir_block_id*2048 + 1024 + 2048, SEEK_SET);
+    for (int i = 0; i < bit_blocks; i++)
+    {
+        unsigned char buffer[2048];
+        fread(buffer, sizeof(buffer), 1, ptr);
+        for (int k = 0; k < 2048; k++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                if (((buffer[k] >> j) & 1) == 1){
+                    used ++;
+                }
+            }           
+        }
+        
+    }
+    printf("\n");
+    printf("Bloques libres %d\n", used);
+    printf("Bloques disponibles %d\n", number_of_blocks - used);
+
+    
+
     fclose(ptr);
 
 }
@@ -168,7 +187,7 @@ int os_exists(char* filename){
             
         }
         printf("NOmbre del file %s\n",actual_filename);
-        if (strcmp(actual_filename, filename)){
+        if (!strcmp(actual_filename, filename)){
             return 1;
         }
         
@@ -181,6 +200,8 @@ int os_exists(char* filename){
 
 
 }
+
+
 
 
 void read_file(char* diskname)

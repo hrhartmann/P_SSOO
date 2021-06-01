@@ -10,12 +10,12 @@ extern int partition;
 extern int dir_block_id;
 extern int number_of_blocks;
 
-struct partition_data {
-    int id;
-    int dir_block_id;
-    int number_of_blocks;
-};
-typedef struct partition_data partitionData;
+// struct partition_data {
+//     int id;
+//     int dir_block_id;
+//     int number_of_blocks;
+// };
+// typedef struct partition_data partitionData;
 
 struct os_File {
     char* name;
