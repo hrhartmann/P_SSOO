@@ -13,6 +13,7 @@ int main(int argc, char **argv)
   os_mbt();
   os_bitmap(0x45);
   printf("%d\n",os_exists("reary.png"));
+  os_open("reary.png", "r");
 
 }
 

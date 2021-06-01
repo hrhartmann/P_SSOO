@@ -10,19 +10,18 @@ extern int partition;
 extern int dir_block_id;
 extern int number_of_blocks;
 
-struct partition_data {
-    int id;
-    int dir_block_id;
-    int number_of_blocks;
-};
-typedef struct partition_data partitionData;
-
-struct os_File {
+struct os_file {
     char* name;
+    int index_block_relative_dir;
+    int size;
+    int number_of_blocks;
+    int* block_pointers;
 };
+typedef struct os_file osFile;
 
 int os_exists(char* filename);
 void os_mount(char* diskname, int partition);
+osFile* os_open(char *filename, char *mode);
 void os_mbt();
 void os_bitmap(unsigned num);
 void read_file(char* diskname);

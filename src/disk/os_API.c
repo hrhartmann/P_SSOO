@@ -144,6 +144,61 @@ void os_bitmap(unsigned num){
 
 }
 
+osFile* os_open(char* filename, char* mode) {
+        // partitionData* pd = get_partition_data();
+    // int block_id = pd -> dir_block_id;
+    int block_id = dir_block_id;
+    FILE *ptr;
+    ptr = fopen(disk_route, "rb");
+    fseek(ptr, block_id*2048 + 1024, SEEK_SET);
+    if (!strcmp(mode, "r")) {
+    for (int i = 0; i < 64; i++) {
+        unsigned char buffer[32];
+        fread(buffer, sizeof(buffer), 1, ptr);
+        int index_block = buffer[1] << 16 | buffer[2] << 8 | buffer[3];
+        if (!buffer[0]){
+            continue;
+        }
+        char actual_filename[28];
+        for (size_t i = 4; i < 32; i++)
+        {
+            actual_filename[i-4] = buffer[i];
+            
+        }
+        printf("NOmbre del file %s\n", actual_filename);
+        if (strcmp(actual_filename, filename)){
+            osFile* readfile = malloc(sizeof(osFile*));
+            readfile -> name = filename;
+            readfile -> index_block_relative_dir = index_block;
+            int partition_abs_path = block_id*2048 + 1024;
+            int index_block_abs_path = partition_abs_path + index_block;
+            
+            fseek(ptr, index_block_abs_path, SEEK_SET);
+            unsigned char ibbuffer[2048]; // index block buffer
+            fread(ibbuffer, sizeof(ibbuffer), 1, ptr);
+            readfile -> size = ibbuffer[0] << 32 | ibbuffer[1] << 24 | ibbuffer[2] << 16 | ibbuffer[3] << 8 | ibbuffer[4];
+            readfile -> number_of_blocks = readfile -> size / 2048;
+            printf("Index block %i\n", readfile -> index_block_relative_dir);
+            printf("Blocks %i\n", readfile -> number_of_blocks);
+            printf("Size %i\n", readfile -> size);
+
+
+            readfile -> block_pointers = malloc(681*sizeof(int));
+            for (int fbpi; fbpi < 681; fbpi++)
+            {
+                int block_pointer = ibbuffer[fbpi] << 16 | ibbuffer[fbpi + 1] << 8 | ibbuffer[fbpi + 2];
+                readfile -> block_pointers[fbpi] = block_pointer;
+
+            }
+        }
+        
+        
+        /* code */
+    }
+    }
+    return 0;
+}
+
 int os_exists(char* filename){
     // partitionData* pd = get_partition_data();
     // int block_id = pd -> dir_block_id;
@@ -176,10 +231,6 @@ int os_exists(char* filename){
         /* code */
     }
     return 0;
-    
-    
-
-
 }
 
 
