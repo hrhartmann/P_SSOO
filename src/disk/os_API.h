@@ -7,6 +7,8 @@
 #define BUFFER_SIZE 1024
 extern char* disk_route;
 extern int partition;
+extern int dir_block_id;
+extern int number_of_blocks;
 
 struct partition_data {
     int id;

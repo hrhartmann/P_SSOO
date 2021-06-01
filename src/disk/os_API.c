@@ -6,15 +6,13 @@
 
 char* disk_route = "";
 int partition = 0;
+int dir_block_id = 0;
+int number_of_blocks = 0;
 
 
 void os_mount(char* diskname, int to_partition){
     disk_route = diskname;
     partition = to_partition;
-};
-
-partitionData* get_partition_data()
-{
     unsigned char buffer[1024];
     FILE *ptr;
     ptr = fopen(disk_route,"rb");
@@ -30,17 +28,45 @@ partitionData* get_partition_data()
                 int ctd = buffer[i+4] << 24 | buffer[i+5] << 16 | buffer[i+6] << 8 | buffer[i+7];
                 printf("Numero de bloque %u\n", block_number);
                 printf("Cantidad de bloque %u\n", ctd);
-                partitionData* new_partition_data = malloc(sizeof(partitionData*));
-                new_partition_data -> id = partition;
-                new_partition_data -> dir_block_id = block_number;
-                new_partition_data -> number_of_blocks = ctd;
-                return new_partition_data;
+                dir_block_id = block_number;
+                number_of_blocks = ctd;
             }
         }    
     }
     
     fclose(ptr);
+
+
 };
+
+// partitionData* get_partition_data()
+// {
+//     unsigned char buffer[1024];
+//     FILE *ptr;
+//     ptr = fopen(disk_route,"rb");
+//     fread(buffer,sizeof(buffer),1,ptr);
+//     for(int i = 0; i<1024; i+=8){
+//         int binary[8];
+//         for(int n = 0; n < 8; n++)
+//             binary[7-n] = (buffer[i] >> n) & 1;
+
+//         if (binary[0] == 1){                                      
+//             if(buffer[i]-128 == partition){
+//                 int block_number = buffer[i+1] << 16 | buffer[i+2] << 8 | buffer[i+3];
+//                 int ctd = buffer[i+4] << 24 | buffer[i+5] << 16 | buffer[i+6] << 8 | buffer[i+7];
+//                 printf("Numero de bloque %u\n", block_number);
+//                 printf("Cantidad de bloque %u\n", ctd);
+//                 partitionData* new_partition_data = malloc(sizeof(partitionData*));
+//                 new_partition_data -> id = partition;
+//                 new_partition_data -> dir_block_id = block_number;
+//                 new_partition_data -> number_of_blocks = ctd;
+//                 return new_partition_data;
+//             }
+//         }    
+//     }
+    
+//     fclose(ptr);
+// };
 
 void os_mbt() {
     // Array buffer donde se van a guardar bytes
@@ -119,8 +145,9 @@ void os_bitmap(unsigned num){
 }
 
 int os_exists(char* filename){
-    partitionData* pd = get_partition_data();
-    int block_id = pd -> dir_block_id;
+    // partitionData* pd = get_partition_data();
+    // int block_id = pd -> dir_block_id;
+    int block_id = dir_block_id;
 
     
     FILE *ptr;
