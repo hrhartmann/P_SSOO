@@ -8,11 +8,20 @@
 extern char* disk_route;
 extern int partition;
 
+struct partition_data {
+    int id;
+    int dir_block_id;
+    int number_of_blocks;
+};
+typedef struct partition_data partitionData;
+
 struct os_File {
     char* name;
 };
 
+int os_exists(char* filename);
 void os_mount(char* diskname, int partition);
 void os_mbt();
+void os_bitmap(unsigned num);
 void read_file(char* diskname);
 unsigned int_to_int(unsigned k);

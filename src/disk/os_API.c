@@ -11,7 +11,37 @@ int partition = 0;
 void os_mount(char* diskname, int to_partition){
     disk_route = diskname;
     partition = to_partition;
-}
+};
+
+partitionData* get_partition_data()
+{
+    unsigned char buffer[1024];
+    FILE *ptr;
+    ptr = fopen(disk_route,"rb");
+    fread(buffer,sizeof(buffer),1,ptr);
+    for(int i = 0; i<1024; i+=8){
+        int binary[8];
+        for(int n = 0; n < 8; n++)
+            binary[7-n] = (buffer[i] >> n) & 1;
+
+        if (binary[0] == 1){                                      
+            if(buffer[i]-128 == partition){
+                int block_number = buffer[i+1] << 16 | buffer[i+2] << 8 | buffer[i+3];
+                int ctd = buffer[i+4] << 24 | buffer[i+5] << 16 | buffer[i+6] << 8 | buffer[i+7];
+                printf("Numero de bloque %u\n", block_number);
+                printf("Cantidad de bloque %u\n", ctd);
+                partitionData* new_partition_data = malloc(sizeof(partitionData*));
+                new_partition_data -> id = partition;
+                new_partition_data -> dir_block_id = block_number;
+                new_partition_data -> number_of_blocks = ctd;
+                return new_partition_data;
+            }
+        }    
+    }
+    
+    fclose(ptr);
+};
+
 void os_mbt() {
     // Array buffer donde se van a guardar bytes
     unsigned char buffer[1024];
@@ -36,7 +66,7 @@ void os_mbt() {
         // }
         // Revisamos el primer bit
         if (binary[0] == 1){
-            printf("Particion %d valida\n", buffer[i]-128);
+            printf("Particion %u valida\n", buffer[i]-128);
         }
         //printf("\n");
     
@@ -44,11 +74,87 @@ void os_mbt() {
     fclose(ptr);
 }
 
-// unsigned int_to_int(unsigned k) {
-//     if (k == 0) return 0;
-//     if (k == 1) return 1;                       /* optional */
-//     return (k % 2) + 10 * int_to_int(k / 2);
-// }
+
+void os_bitmap(unsigned num){
+    unsigned char buffer[1024];
+    FILE *ptr;
+    ptr = fopen(disk_route,"rb");
+    
+    for(int i = 0; i<1024; i+=8){
+        int binary[8];
+        for(int n = 0; n < 8; n++)
+            binary[7-n] = (buffer[i] >> n) & 1;
+
+        if (binary[0] == 1){                                      
+            if(buffer[i]-128 == partition){
+                int block_number = buffer[i+1] << 16 | buffer[i+2] << 8 | buffer[i+3];
+                int ctd = buffer[i+4] << 24 | buffer[i+5] << 16 | buffer[i+6] << 8 | buffer[i+7];
+                printf("num0 %u\n", buffer[i]);
+                printf("num1 %u\n", buffer[i+1]);
+                printf("num2 %u\n", buffer[i+2]);
+                printf("num3 %u\n", buffer[i+3]);
+                printf("Numero de bloque %u\n", block_number);
+                printf("num4 %u\n", buffer[i+4]);
+                printf("num5 %u\n", buffer[i+5]);
+                printf("num6 %u\n", buffer[i+6]);
+                printf("num7 %u\n", buffer[i+7]);
+                printf("Cantidad de bloque %u\n", ctd);
+            }
+
+
+
+        }    
+    }
+    
+
+    if (num == 0){
+        printf("Imprimir bitmaps entero\n");
+    }else{
+        //fseek(ptr, block_number*2048 + 1024, SEEK_SET);
+        // // Me encuentro en el bloque directorio
+        
+    }
+    fclose(ptr);
+
+}
+
+int os_exists(char* filename){
+    partitionData* pd = get_partition_data();
+    int block_id = pd -> dir_block_id;
+
+    
+    FILE *ptr;
+    ptr = fopen(disk_route, "rb");
+    fseek(ptr, block_id*2048 + 1024, SEEK_SET);
+    
+    for (int i = 0; i < 64; i++)
+    {
+        unsigned char buffer[32];
+        fread(buffer, sizeof(buffer), 1, ptr);
+        if (!buffer[0]){
+            continue;
+        }
+        char actual_filename[28];
+        for (size_t i = 4; i < 32; i++)
+        {
+            actual_filename[i-4] = buffer[i];
+            
+        }
+        printf("NOmbre del file %s\n",actual_filename);
+        if (strcmp(actual_filename, filename)){
+            return 1;
+        }
+        
+        
+        /* code */
+    }
+    return 0;
+    
+    
+
+
+}
+
 
 void read_file(char* diskname)
 {
