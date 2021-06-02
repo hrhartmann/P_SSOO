@@ -29,6 +29,6 @@ void os_ls();
 void os_create_partition(int id, int size);
 void os_delete_partition(int id);
 void os_reset_mbt();
-
+int comp (const void * elem1, const void * elem2);
 void read_file(char* diskname);
 unsigned int_to_int(unsigned k);
