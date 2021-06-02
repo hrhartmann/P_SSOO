@@ -2,6 +2,7 @@
 #include <stdio.h>  // FILE, fopen, fclose, etc.
 #include <string.h> // strtok, strcpy, etc.
 #include <stdlib.h> // malloc, calloc, free, etc.
+#include <math.h>
 #include "os_API.h"
 
 char* disk_route = "";
@@ -102,44 +103,64 @@ void os_mbt() {
 
 
 void os_bitmap(unsigned num){
-    unsigned char buffer[1024];
+    
     FILE *ptr;
     ptr = fopen(disk_route,"rb");
+    int bit_blocks = ceil((double) number_of_blocks/16384);
+    //int last_bits = number_of_blocks % 16384;
+    //printf("BORRAR LUEGO, EL DIR_BLOCK ID ES %d\n\n",dir_block_id);
     
-    for(int i = 0; i<1024; i+=8){
-        int binary[8];
-        for(int n = 0; n < 8; n++)
-            binary[7-n] = (buffer[i] >> n) & 1;
-
-        if (binary[0] == 1){                                      
-            if(buffer[i]-128 == partition){
-                int block_number = buffer[i+1] << 16 | buffer[i+2] << 8 | buffer[i+3];
-                int ctd = buffer[i+4] << 24 | buffer[i+5] << 16 | buffer[i+6] << 8 | buffer[i+7];
-                printf("num0 %u\n", buffer[i]);
-                printf("num1 %u\n", buffer[i+1]);
-                printf("num2 %u\n", buffer[i+2]);
-                printf("num3 %u\n", buffer[i+3]);
-                printf("Numero de bloque %u\n", block_number);
-                printf("num4 %u\n", buffer[i+4]);
-                printf("num5 %u\n", buffer[i+5]);
-                printf("num6 %u\n", buffer[i+6]);
-                printf("num7 %u\n", buffer[i+7]);
-                printf("Cantidad de bloque %u\n", ctd);
-            }
-
-
-
-        }    
-    }
-    
-
     if (num == 0){
-        printf("Imprimir bitmaps entero\n");
+        printf("Imprimir todo\n");
+        fseek(ptr, dir_block_id*2048 + 1024 + 2048, SEEK_SET);
+        for (int i = 0; i < bit_blocks; i++)
+        {
+            printf("Bloque bitmap %d\n", i+1);
+            unsigned char buffer[2048];
+            fread(buffer, sizeof(buffer), 1, ptr);
+            for (int j = 0; j < 2048; j++)
+            {
+                fprintf(stderr, "%02X", buffer[j]);
+            }
+            printf("\n");
+        }
+        
     }else{
-        //fseek(ptr, block_number*2048 + 1024, SEEK_SET);
-        // // Me encuentro en el bloque directorio
+        fseek(ptr, dir_block_id*2048 + 1024 + num*2048, SEEK_SET);
+        //printf("DEBUDDGGGGG tenemos  y estoy en %ld\n",ftell(ptr));
+        unsigned char buffer[2048];
+        fread(buffer, sizeof(buffer), 1, ptr);
+        for (int i = 0; i < 2048; i++)
+        {
+            fprintf(stderr, "%02X", buffer[i]);
+        }
+        printf("\n");      
         
     }
+    //char bitmap[131072];
+    int used = 0;
+    fseek(ptr, dir_block_id*2048 + 1024 + 2048, SEEK_SET);
+    for (int i = 0; i < bit_blocks; i++)
+    {
+        unsigned char buffer[2048];
+        fread(buffer, sizeof(buffer), 1, ptr);
+        for (int k = 0; k < 2048; k++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                if (((buffer[k] >> j) & 1) == 1){
+                    used ++;
+                }
+            }           
+        }
+        
+    }
+    printf("\n");
+    printf("Bloques usados %d\n", used);
+    printf("Bloques disponibles %d\n", number_of_blocks - used);
+
+    
+
     fclose(ptr);
 
 }
@@ -167,8 +188,8 @@ int os_exists(char* filename){
             actual_filename[i-4] = buffer[i];
             
         }
-        printf("NOmbre del file %s\n",actual_filename);
-        if (strcmp(actual_filename, filename)){
+        //printf("NOmbre del file %s\n",actual_filename);
+        if (!strcmp(actual_filename, filename)){
             return 1;
         }
         
@@ -176,10 +197,205 @@ int os_exists(char* filename){
         /* code */
     }
     return 0;
+
+}
+
+void os_ls(){
+    // partitionData* pd = get_partition_data();
+    // int block_id = pd -> dir_block_id;
+    int block_id = dir_block_id;
+
     
+    FILE *ptr;
+    ptr = fopen(disk_route, "rb");
+    fseek(ptr, block_id*2048 + 1024, SEEK_SET);
     
+    for (int i = 0; i < 64; i++){
+        unsigned char buffer[32];
+        fread(buffer, sizeof(buffer), 1, ptr);
+        if (!buffer[0]){
+            continue;
+        }
+        char actual_filename[28];
+        for (size_t i = 4; i < 32; i++)
+        {
+            actual_filename[i-4] = buffer[i];
+            
+        }
+        printf("Nombre del file %s\n",actual_filename);
+       
+        /* code */
+    }
 
 
+}
+
+
+void os_delete_partition(int id){
+
+    unsigned char buffer[1024];
+    FILE *ptr;
+    ptr = fopen(disk_route,"r+b");
+    fread(buffer,sizeof(buffer),1,ptr);
+    for(int i = 0; i<1024; i+=8){
+        int binary[8];
+        for(int n = 0; n < 8; n++)
+            binary[7-n] = (buffer[i] >> n) & 1;
+
+        if (binary[0] == 1){                                      
+            if(buffer[i]-128 == id){
+                printf("ENCONTRE PARTICION %d en el i %d\n", buffer[i] - 128, i);
+                fseek(ptr, i, SEEK_SET);
+                unsigned char newByte = 0x00;
+                fwrite(&newByte, sizeof(newByte), 1, ptr);
+            }
+        }    
+    }
+    
+    fclose(ptr);
+
+}
+
+void os_reset_mbt(){
+    unsigned char buffer[1024];
+    FILE *ptr;
+    ptr = fopen(disk_route,"r+b");
+    fread(buffer,sizeof(buffer),1,ptr);
+    for(int i = 0; i<1024; i+=8){
+
+        fseek(ptr, i, SEEK_SET);
+        unsigned char newByte = 0x00;
+        fwrite(&newByte, sizeof(newByte), 1, ptr);  
+    }
+    
+    fclose(ptr);
+}
+
+int comp (const void * elem1, const void * elem2){
+    //printf("LLEGUE\n");
+    // const int* f = *(const int**)elem1;
+    // const int* q = *(const int**)elem2;
+    const int* f = elem1;
+    const int* q = elem2;
+    //printf("Se compara %d con %d", f[0], q[0]);
+    if (f[0] > q[0]) return 1;
+    if (f[0] < q[0]) return -1;
+    return 0;
+}
+
+void os_create_partition(int id, int size){
+    // Encontrar espacios ocupados
+    int used[128][2];
+    int num = 0;
+    unsigned char buffer[1024];
+    FILE *ptr;
+    ptr = fopen(disk_route,"r+b");
+    fread(buffer,sizeof(buffer),1,ptr);
+    for(int i = 0; i<1024; i+=8){
+        int binary[8];
+        for(int n = 0; n < 8; n++)
+            binary[7-n] = (buffer[i] >> n) & 1;
+
+        if (binary[0] == 1){      
+            if (id == buffer[i]-128){
+                printf("Particion ya existe\n");
+                return;
+            }                                
+           
+            int block_number = buffer[i+1] << 16 | buffer[i+2] << 8 | buffer[i+3];
+            int ctd = buffer[i+4] << 24 | buffer[i+5] << 16 | buffer[i+6] << 8 | buffer[i+7];
+            num++;
+            used[i/8][0] = block_number;
+            used[i/8][1] = ctd ;
+            
+        }    
+    }
+    used[num][0] = 0;
+    used[num][1] = 0;
+    num ++;
+    used[num][0] = 2097152;
+    used[num][1] = 0;
+    num ++;
+    qsort(used, num,sizeof(used[0]), comp);
+    //printf("DESPUES DEL SORT\n");
+    for (int i = 0; i < num; i++)
+    {
+        printf("Ocupado desde %d hasta %d\n", used[i][0], used[i][0] + used[i][1]);
+    }
+    
+
+    for (int i = 0; i < num-1; i++)
+    {
+        
+        int from = used[i][0] + used[i][1];
+        int to = used[i+1][0];
+        int available = to - from;
+        if (available >= size) {
+            printf("va entre %d y %d \n", from, from + size);
+            //break;
+
+            for(int i = 0; i<1024; i+=8){
+                int binary[8];
+                for(int n = 0; n < 8; n++)
+                    binary[7-n] = (buffer[i] >> n) & 1;
+
+                if (binary[0] == 0){                                    
+                    // creamos una entrada en mbt con los elementos necesarios.
+                    fseek(ptr, i, SEEK_SET);
+                    unsigned char newByte = 128+id;
+                    fwrite(&newByte, sizeof(newByte), 1, ptr); 
+                    unsigned char pos[3] = {(from>>16) & 0xFF,(from>>8) & 0xFF,(from>>0) & 0xFF};
+                    for (size_t i = 0; i < 3; i++)
+                    {
+                        //printf("Byte de from %u\n", pos[i]);
+                        fwrite(&pos[i], sizeof(pos[i]), 1, ptr); 
+                    }
+                    unsigned char sizeb[4] = {(size>>24) & 0xFF,(size>>16) & 0xFF,(size>>8) & 0xFF,(size>>0) & 0xFF};
+                    for (size_t i = 0; i < 4; i++)
+                    {
+                        //printf("Byte de size %u\n", sizeb[i]);
+                        fwrite(&sizeb[i], sizeof(sizeb[i]), 1, ptr); 
+                    }
+                    // Ahora instanciamos la particion en los bloques de memoria
+                    fseek(ptr, from*2048 + 1024, SEEK_SET);
+                    //printf("FROm es %d\n", from);
+                    // Lleno de 0 el primer byte de entradas de directorio
+                    for (int i = 0; i < 2048; i++)
+                    {
+                        unsigned char newByte = 0x00;
+                        fwrite(&newByte, sizeof(newByte), 1, ptr); 
+                    }
+                    // Consistencia al bitmap, primer bloque es directorio: 1, los bloques de bitmap son 1.
+                    //fseek(ptr, from*2048 + 1024 + 2048, SEEK_SET);
+                    int num_bitmap =  ceil((double) size/16384);
+                    int cuent = 128;
+                    if (num_bitmap == 8){
+                        unsigned char newByte = 0xFF;
+                        fwrite(&newByte, sizeof(newByte), 1, ptr); 
+                        unsigned char newByte2 = 128;
+                        fwrite(&newByte2, sizeof(newByte2), 1, ptr); 
+
+
+                    }else{
+                        for (int i = 0; i < num_bitmap; i++){
+                            cuent+= pow(2,6-i);
+                            //printf("ITERACION %d CUENT ES %d Y SE LE SUMA %d\n", i, cuent, 2^(6-i));
+                        }
+                        //printf("DEBUDDGGGGG tenemos cuent = %d y num_bitmap = %d y estoy en %ld\n", cuent, num_bitmap, ftell(ptr));
+                        unsigned char newByte = cuent;
+                        fwrite(&newByte, sizeof(newByte), 1, ptr);
+
+                    }
+                
+                    break;                    
+                }    
+            }
+            break;
+
+        }
+    }
+  
+    fclose(ptr);  
 }
 
 
