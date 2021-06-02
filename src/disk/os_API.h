@@ -12,10 +12,13 @@ extern int number_of_blocks;
 
 struct os_file {
     char* name;
+    char* mode;
     int index_block_relative_dir;
     int size;
     int number_of_blocks;
     int* block_pointers;
+    int last_pointer;
+    int last_byte_read;
 };
 typedef struct os_file osFile;
 
@@ -26,3 +29,4 @@ void os_mbt();
 void os_bitmap(unsigned num);
 void read_file(char* diskname);
 unsigned int_to_int(unsigned k);
+int os_read(osFile* file_desc, void* buffer, int nbytes);
