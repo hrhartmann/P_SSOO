@@ -9,16 +9,6 @@ extern char* disk_route;
 extern int partition;
 extern int dir_block_id;
 extern int number_of_blocks;
-<<<<<<< HEAD
-=======
-
-struct partition_data {
-    int id;
-    int dir_block_id;
-    int number_of_blocks;
-};
-typedef struct partition_data partitionData;
->>>>>>> main
 
 struct os_file {
     char* name;
@@ -35,7 +25,6 @@ struct os_file {
 };
 typedef struct os_file osFile;
 
-<<<<<<< HEAD
 
 
 
@@ -45,8 +34,6 @@ void os_delete_partition(int id);
 void os_reset_mbt();
 int comp (const void * elem1, const void * elem2);
 
-=======
->>>>>>> main
 int os_exists(char* filename);
 void os_mount(char* diskname, int partition);
 osFile* os_open(char *filename, char *mode);
